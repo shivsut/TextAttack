@@ -164,6 +164,7 @@ class Attacker:
             example = textattack.shared.AttackedText(example)
             if self.dataset.label_names is not None:
                 example.attack_attrs["label_names"] = self.dataset.label_names
+                example.attack_attrs["ground_truth"] = ground_truth_output
             try:
                 result = self.attack.attack(example, ground_truth_output)
             except Exception as e:
