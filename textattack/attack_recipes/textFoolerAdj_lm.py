@@ -6,7 +6,7 @@ from textattack.constraints.semantics.sentence_encoders import UniversalSentence
 from textattack.constraints.grammaticality import PartOfSpeech, LanguageTool
 from textattack.goal_functions import UntargetedClassification
 from textattack.search_methods import GreedyWordSwapWIR
-from textattack.transformations import WordSwapEmbedding
+from textattack.transformations import WordSwapEmbedding, WordSwapMaskedLM
 from textattack.constraints.semantics.lm_liklihood import lm_liklihood_constraint
 
 class TextFoolerJin2019Adjusted_LM(AttackRecipe):
@@ -30,7 +30,10 @@ class TextFoolerJin2019Adjusted_LM(AttackRecipe):
         # Swap words with their 50 closest embedding nearest-neighbors.
         # Embedding: Counter-fitted PARAGRAM-SL999 vectors.
         #
-        transformation = WordSwapEmbedding(max_candidates=50)
+        #transformation = WordSwapEmbedding(max_candidates=50)
+        transformation = WordSwapMaskedLM(
+            method="bae", max_candidates=50, min_confidence=0.0
+        )
         #
         # Don't modify the same word twice or the stopwords defined
         # in the TextFooler public implementation.
@@ -97,9 +100,15 @@ class TextFoolerJin2019Adjusted_LM(AttackRecipe):
         #
         # Goal is untargeted classification
         #
+        # constraints.append(
+        #     WordEmbeddingDistance(min_cos_sim=0.7)
+        # )
         constraints.append(
             lm_liklihood_constraint(model_path='C:\\git\\nlp-fall-2023\\assignments\\fp\\fp-dataset-artifacts-main\\content\\fp-dataset-artifacts\\roberta-base-snli\\')
         )
+        # constraints.append(
+        #     LanguageTool(1)
+        # )
         goal_function = UntargetedClassification(model_wrapper)
         #
         # Greedily swap words with "Word Importance Ranking".

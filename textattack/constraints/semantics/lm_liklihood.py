@@ -18,7 +18,6 @@ class lm_liklihood_constraint(Constraint):
         for i, (k,v) in enumerate(self.tokenizer.get_vocab().items()):
             self.vocab[v] = (k, i)
         self.label_tag = {0:"<ent>", 1:"<neu>", 2: "<con>" }
-        self.lable_idx = {0: [0,1,2], 1:[3,4,5],2:[6,7,8]}
         self.label_token = {"<ent>" : self.tokenizer.convert_tokens_to_ids(self.tokenizer.tokenize("<ent>"))[0],
                             "<neu>" : self.tokenizer.convert_tokens_to_ids(self.tokenizer.tokenize("<neu>"))[0],
                             "<con>": self.tokenizer.convert_tokens_to_ids(self.tokenizer.tokenize("<con>"))[0]}
@@ -65,8 +64,6 @@ class lm_liklihood_constraint(Constraint):
         neu_masked_sents = self.replace_label(self.label_token["<neu>"], self.label_token["<ent>"], masked_sents=copy.deepcopy(ent_masked_sents))
         con_masked_sents = self.replace_label(self.label_token["<con>"], self.label_token["<ent>"], masked_sents=copy.deepcopy(ent_masked_sents))
 
-        one_label_sent_size = len(ent_masked_sents)
-
         input_ids = torch.tensor( [sent for sent in ent_masked_sents + neu_masked_sents + con_masked_sents], dtype=torch.long)
         mask_ids = torch.tensor([[1] * len(sent) for sent in ent_masked_sents + neu_masked_sents + con_masked_sents])
         model_out = self.model(input_ids=input_ids, attention_mask=mask_ids)
@@ -78,13 +75,20 @@ class lm_liklihood_constraint(Constraint):
         tokens_tensor = torch.tensor(replaced_token).unsqueeze(1).repeat(3,1)
         probs = torch.gather(probs_idx, 1, tokens_tensor).squeeze(-1)
 
+        lable_idx_map = {}
+        idx = 0
+        for i in range(3):
+            indices = []
+            for _ in range(len(ent_masked_sents)):
+                indices.append(idx)
+                idx += 1
+            lable_idx_map[i] = indices
         gold_label = reference_text.attack_attrs['ground_truth']
-        gold_probs = probs[self.lable_idx[gold_label]].prod(0)
+        gold_probs = probs[lable_idx_map[gold_label]].prod(0)
 
-        tmp_label_idx_dict = self.lable_idx.copy()
-        tmp_label_idx_dict.pop(gold_label)
+        lable_idx_map.pop(gold_label)
         other_probs = []
-        for label, idx in tmp_label_idx_dict.items():
+        for label, idx in lable_idx_map.items():
             other_probs.append(probs[idx].prod(0))
         other_prob = max(other_probs)
         if (gold_probs/other_prob) > 1:
