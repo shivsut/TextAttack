@@ -72,14 +72,16 @@ class lm_liklihood_constraint(Constraint):
 
         input_ids = torch.tensor( [sent for sent in ent_masked_sents + neu_masked_sents + con_masked_sents], dtype=torch.long).to(self.device)
         mask_ids = torch.tensor([[1] * len(sent) for sent in ent_masked_sents + neu_masked_sents + con_masked_sents]).to(self.device)
-        model_out = self.model(input_ids=input_ids, attention_mask=mask_ids)
+        with torch.no_grad():
+            self.model.eval()
+            model_out = self.model(input_ids=input_ids, attention_mask=mask_ids)
 
-        logits = model_out[0].detach()
+            logits = model_out[0].detach()
 
-        pos_idx = torch.tensor(replaced_idx).unsqueeze(-1).unsqueeze(-1).repeat(3, 1, logits.size(-1))
-        probs_idx = torch.gather(logits, 1, pos_idx).softmax(dim=-1).squeeze(1)
-        tokens_tensor = torch.tensor(replaced_token).unsqueeze(1).repeat(3,1)
-        probs = torch.gather(probs_idx, 1, tokens_tensor).squeeze(-1)
+            pos_idx = torch.tensor(replaced_idx).unsqueeze(-1).unsqueeze(-1).repeat(3, 1, logits.size(-1))
+            probs_idx = torch.gather(logits, 1, pos_idx).softmax(dim=-1).squeeze(1)
+            tokens_tensor = torch.tensor(replaced_token).unsqueeze(1).repeat(3,1)
+            probs = torch.gather(probs_idx, 1, tokens_tensor).squeeze(-1)
 
         lable_idx_map = {}
         idx = 0
