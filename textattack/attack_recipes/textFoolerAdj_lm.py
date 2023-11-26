@@ -6,7 +6,7 @@ from textattack.constraints.semantics.sentence_encoders import UniversalSentence
 from textattack.constraints.grammaticality import PartOfSpeech, LanguageTool
 from textattack.goal_functions import UntargetedClassification
 from textattack.search_methods import GreedyWordSwapWIR
-from textattack.transformations import WordSwapEmbedding, WordSwapMaskedLM
+from textattack.transformations import WordSwapEmbedding, WordSwapMaskedLM, WordSwapWordNet
 from textattack.constraints.semantics.lm_liklihood import lm_liklihood_constraint
 
 class TextFoolerJin2019Adjusted_LM(AttackRecipe):
@@ -30,10 +30,11 @@ class TextFoolerJin2019Adjusted_LM(AttackRecipe):
         # Swap words with their 50 closest embedding nearest-neighbors.
         # Embedding: Counter-fitted PARAGRAM-SL999 vectors.
         #
-        #transformation = WordSwapEmbedding(max_candidates=50)
-        transformation = WordSwapMaskedLM(
-            method="bae", max_candidates=50, min_confidence=0.0
-        )
+        transformation = WordSwapEmbedding(max_candidates=50)
+        # transformation = WordSwapMaskedLM(
+        #     method="bae", max_candidates=50, min_confidence=0.0
+        # )
+        #transformation = WordSwapWordNet()
         #
         # Don't modify the same word twice or the stopwords defined
         # in the TextFooler public implementation.
@@ -65,6 +66,15 @@ class TextFoolerJin2019Adjusted_LM(AttackRecipe):
         )
         # fmt: on
         constraints = [RepeatModification(), StopwordModification(stopwords=stopwords)]
+        # constraints.append(PartOfSpeech(allow_verb_noun_swap=True))
+        # use_constraint = UniversalSentenceEncoder(
+        #     threshold=0.936338023,
+        #     metric="cosine",
+        #     compare_against_original=True,
+        #     window_size=15,
+        #     skip_text_shorter_than_window=True,
+        # )
+        # constraints.append(use_constraint)
         #
         # During entailment, we should only edit the hypothesis - keep the premise
         # the same.

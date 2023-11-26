@@ -23,7 +23,7 @@ class UniversalSentenceEncoder(SentenceEncoder):
 
         self._tfhub_url = tfhub_url
         # Lazily load the model
-        self.model = None
+        self.model = hub.load(self._tfhub_url)
 
     def encode(self, sentences):
         if not self.model:

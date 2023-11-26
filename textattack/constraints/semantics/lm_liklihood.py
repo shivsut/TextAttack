@@ -13,7 +13,6 @@ class lm_liklihood_constraint(Constraint):
         super().__init__(compare_against_original)
         self.tokenizer = RobertaTokenizer.from_pretrained(model_path)
         self.model = RobertaForMaskedLM.from_pretrained(model_path)
-        self.model.eval()
         self.vocab = {}
         for i, (k,v) in enumerate(self.tokenizer.get_vocab().items()):
             self.vocab[v] = (k, i)
@@ -21,12 +20,19 @@ class lm_liklihood_constraint(Constraint):
         self.label_token = {"<ent>" : self.tokenizer.convert_tokens_to_ids(self.tokenizer.tokenize("<ent>"))[0],
                             "<neu>" : self.tokenizer.convert_tokens_to_ids(self.tokenizer.tokenize("<neu>"))[0],
                             "<con>": self.tokenizer.convert_tokens_to_ids(self.tokenizer.tokenize("<con>"))[0]}
+        self.device = "cpu"
+        if torch.cuda.is_available():
+            torch.set_default_device('cuda')
+            self.model = self.model.to("cuda")
+            self.device = "cuda"
+        self.model.eval()
     def get_masked_sents(self, label, transformed_text, reference_text):
         #reference_text.attack_attrs['ground_truth']
         labelled_prem_hyp = label + transformed_text.tokenizer_input[0] + "</s></s>" + transformed_text.tokenizer_input[1]
-        modified_indices = list(transformed_text.attack_attrs['newly_modified_indices'])[0]
+        modified_indices = list(transformed_text.attack_attrs['modified_indices'])
         modified_word = ""
         replaced_word = ""
+        modified_indices  = modified_indices[0]
         if modified_indices < len(transformed_text.words_per_input[0]):
             modified_word = reference_text.words_per_input[0][modified_indices]
             replaced_word = transformed_text.words_per_input[0][modified_indices]
@@ -64,8 +70,8 @@ class lm_liklihood_constraint(Constraint):
         neu_masked_sents = self.replace_label(self.label_token["<neu>"], self.label_token["<ent>"], masked_sents=copy.deepcopy(ent_masked_sents))
         con_masked_sents = self.replace_label(self.label_token["<con>"], self.label_token["<ent>"], masked_sents=copy.deepcopy(ent_masked_sents))
 
-        input_ids = torch.tensor( [sent for sent in ent_masked_sents + neu_masked_sents + con_masked_sents], dtype=torch.long)
-        mask_ids = torch.tensor([[1] * len(sent) for sent in ent_masked_sents + neu_masked_sents + con_masked_sents])
+        input_ids = torch.tensor( [sent for sent in ent_masked_sents + neu_masked_sents + con_masked_sents], dtype=torch.long).to(self.device)
+        mask_ids = torch.tensor([[1] * len(sent) for sent in ent_masked_sents + neu_masked_sents + con_masked_sents]).to(self.device)
         model_out = self.model(input_ids=input_ids, attention_mask=mask_ids)
 
         logits = model_out[0].detach()

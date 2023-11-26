@@ -149,6 +149,10 @@ class GreedyWordSwapWIR(SearchMethod):
             results, search_over = self.get_goal_results(transformed_text_candidates)
             results = sorted(results, key=lambda x: -x.score)
             # Skip swaps which don't improve the score
+            candidate_res = []
+            for res in results:
+                if res.score > cur_result.score and res.goal_status == GoalFunctionResultStatus.SUCCEEDED:
+                    candidate_res.append(res)
             if results[0].score > cur_result.score:
                 cur_result = results[0]
             else:
@@ -174,6 +178,8 @@ class GreedyWordSwapWIR(SearchMethod):
                         max_similarity = similarity_score
                         best_result = result
                 return best_result
+            else:
+                cur_result = initial_result
 
         return cur_result
 
