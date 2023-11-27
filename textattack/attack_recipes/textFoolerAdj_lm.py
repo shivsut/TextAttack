@@ -79,10 +79,10 @@ class TextFoolerJin2019Adjusted_LM(AttackRecipe):
         # During entailment, we should only edit the hypothesis - keep the premise
         # the same.
         #
-        # input_column_modification = InputColumnModification(
-        #     ["premise", "hypothesis"], {"hypothesis"}
-        # )
-        # constraints.append(input_column_modification)
+        input_column_modification = InputColumnModification(
+            ["premise", "hypothesis"], {"hypothesis"}
+        )
+        constraints.append(input_column_modification)
         # Minimum word embedding cosine similarity of 0.5.
         # (The paper claims 0.7, but analysis of the released code and some empirical
         # results show that it's 0.5.)
@@ -113,8 +113,12 @@ class TextFoolerJin2019Adjusted_LM(AttackRecipe):
         # constraints.append(
         #     WordEmbeddingDistance(min_cos_sim=0.7)
         # )
+        import os
+        path = 'C:\\git\\nlp-fall-2023\\assignments\\fp\\fp-dataset-artifacts-main\\content\\fp-dataset-artifacts\\roberta-base-snli\\'
+        if not os.path.isdir(path):
+            path = '/gdrive/MyDrive/fp/llmtrain/roberta-base-snli/'
         constraints.append(
-            lm_liklihood_constraint(model_path='C:\\git\\nlp-fall-2023\\assignments\\fp\\fp-dataset-artifacts-main\\content\\fp-dataset-artifacts\\roberta-base-snli\\')
+            lm_liklihood_constraint(model_path=path)
         )
         # constraints.append(
         #     LanguageTool(1)
