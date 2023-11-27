@@ -50,3 +50,6 @@ checkpoints/
 !tests/sample_outputs/csv_attack_log.csv
 tests/test_command_line/attack_log.txt
 textattack/test.py
+textattack/test1.py
+textattack/test2.py
+textattack/test4.py

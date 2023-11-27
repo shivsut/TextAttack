@@ -7,6 +7,8 @@ TextAttack CLI main class
 
 
 # !/usr/bin/env python
+import os, sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 import argparse
 
 from textattack.commands.attack_command import AttackCommand
@@ -18,9 +20,6 @@ from textattack.commands.list_things_command import ListThingsCommand
 from textattack.commands.peek_dataset_command import PeekDatasetCommand
 from textattack.commands.train_model_command import TrainModelCommand
 
-import os
-import os, sys
-sys.path.append(os.path.join(os.path.dirname(__file__)))
 def main():
     parser = argparse.ArgumentParser(
         "TextAttack CLI",

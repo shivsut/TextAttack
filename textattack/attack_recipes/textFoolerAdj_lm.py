@@ -1,3 +1,5 @@
+import transformers
+
 from textattack.attack import Attack
 from textattack.attack_recipes import AttackRecipe
 from textattack.constraints.semantics import WordEmbeddingDistance
@@ -30,9 +32,15 @@ class TextFoolerJin2019Adjusted_LM(AttackRecipe):
         # Swap words with their 50 closest embedding nearest-neighbors.
         # Embedding: Counter-fitted PARAGRAM-SL999 vectors.
         #
-        transformation = WordSwapEmbedding(max_candidates=50)
+        transformation = WordSwapEmbedding(max_candidates=60)
+        # shared_masked_lm = transformers.AutoModelForCausalLM.from_pretrained(
+        #     "distilroberta-base"
+        # )
+        # shared_tokenizer = transformers.AutoTokenizer.from_pretrained(
+        #     "distilroberta-base"
+        # )
         # transformation = WordSwapMaskedLM(
-        #     method="bae", max_candidates=50, min_confidence=0.0
+        #     method="bert-attack", max_candidates=50, min_confidence=5e-4
         # )
         #transformation = WordSwapWordNet()
         #
@@ -113,13 +121,13 @@ class TextFoolerJin2019Adjusted_LM(AttackRecipe):
         # constraints.append(
         #     WordEmbeddingDistance(min_cos_sim=0.7)
         # )
-        import os
-        path = 'C:\\git\\nlp-fall-2023\\assignments\\fp\\fp-dataset-artifacts-main\\content\\fp-dataset-artifacts\\roberta-base-snli\\'
-        if not os.path.isdir(path):
-            path = '/gdrive/MyDrive/fp/llmtrain/roberta-base-snli/'
-        constraints.append(
-            lm_liklihood_constraint(model_path=path)
-        )
+        # import os
+        # path = 'C:\\git\\nlp-fall-2023\\assignments\\fp\\fp-dataset-artifacts-main\\content\\fp-dataset-artifacts\\roberta-base-snli\\'
+        # if not os.path.isdir(path):
+        #     path = '/gdrive/MyDrive/fp/llmtrain/roberta-base-snli/'
+        # constraints.append(
+        #     lm_liklihood_constraint(model_path=path)
+        # )
         # constraints.append(
         #     LanguageTool(1)
         # )
