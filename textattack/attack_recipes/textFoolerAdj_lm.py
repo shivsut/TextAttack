@@ -112,14 +112,14 @@ class TextFoolerJin2019Adjusted_LM(AttackRecipe):
         # embeddings by pi. So if the original threshold was that 1 - sim >= 0.5, the
         # new threshold is 1 - (0.5) / pi = 0.840845057
         #
-        use_constraint = UniversalSentenceEncoder(
-            threshold=0.840845057,
-            metric="angular",
-            compare_against_original=False,
-            window_size=15,
-            skip_text_shorter_than_window=True,
-        )
-        constraints.append(use_constraint)
+        # use_constraint = UniversalSentenceEncoder(
+        #     threshold=0.840845057,
+        #     metric="angular",
+        #     compare_against_original=False,
+        #     window_size=15,
+        #     skip_text_shorter_than_window=True,
+        # )
+        # constraints.append(use_constraint)
         #
         # Goal is untargeted classification
         #

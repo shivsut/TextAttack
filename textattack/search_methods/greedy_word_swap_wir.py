@@ -10,6 +10,7 @@ A Strong Baseline for Natural Language Attack on Text Classification and
 Entailment by Jin et. al, 2019. See https://arxiv.org/abs/1907.11932 and
 https://github.com/jind11/TextFooler.
 """
+import math
 
 import numpy as np
 import torch
@@ -136,7 +137,20 @@ class GreedyWordSwapWIR(SearchMethod):
             index_order = np.array(indices_to_order)[(-index_scores).argsort()]
 
         return index_order, search_over
-
+    def calc_similarity(self,  trans_sent, ref_sent):
+        res = []
+        ref_emb = self.use_constraint.encode([ref_sent.tokenizer_input[0]])[0]
+        if not isinstance(ref_emb, torch.Tensor):
+            ref_emb = torch.tensor(ref_emb)
+        for t in trans_sent:
+            t_emb = self.use_constraint.encode([t.attacked_text.tokenizer_input[0]])[0]
+            if not isinstance(t_emb, torch.Tensor):
+                t_emb = torch.tensor(t_emb)
+            cos_sim = torch.nn.CosineSimilarity(dim=0)(ref_emb, t_emb)
+            score =  1 - (torch.acos(cos_sim) / math.pi)
+            res.append(score)
+        return res
+            #t.attacked_text.attack_attrs["similarity_score"] = score
     def perform_search(self, initial_result):
         attacked_text = initial_result.attacked_text
 
@@ -165,10 +179,11 @@ class GreedyWordSwapWIR(SearchMethod):
             #     cur_result = results[0]
             if not candidate_res:
                 continue
-            self.use_constraint._check_constraint_many(candidate_res, initial_result.attacked_text)
-
-            # If we succeeded, return the index with best similarity.
-            if cur_result.goal_status == GoalFunctionResultStatus.SUCCEEDED:
+            scores = self.calc_similarity(candidate_res, initial_result.attacked_text)
+            best_result = cur_result
+            for i in range(len(candidate_res)):
+                cur_result = candidate_res[i]
+                # If we succeeded, return the index with best similarity.
                 best_result = cur_result
                 # @TODO: Use vectorwise operations
                 max_similarity = -float("inf")
@@ -177,7 +192,8 @@ class GreedyWordSwapWIR(SearchMethod):
                         break
                     candidate = result.attacked_text
                     try:
-                        similarity_score = candidate.attack_attrs["similarity_score"]
+                        #similarity_score = candidate.attack_attrs["similarity_score"]
+                        similarity_score = scores[i]
                     except KeyError:
                         # If the attack was run without any similarity metrics,
                         # candidates won't have a similarity score. In this
@@ -187,10 +203,7 @@ class GreedyWordSwapWIR(SearchMethod):
                     if similarity_score > max_similarity:
                         max_similarity = similarity_score
                         best_result = result
-                return best_result
-            else:
-                cur_result = initial_result
-
+            return best_result
         return cur_result
 
     def check_transformation_compatibility(self, transformation):

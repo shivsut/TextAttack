@@ -28,7 +28,7 @@ class lm_liklihood_constraint(Constraint):
         self.model.eval()
     def get_masked_sents(self, label, transformed_text, reference_text):
         #reference_text.attack_attrs['ground_truth']
-        labelled_prem_hyp = label + transformed_text.tokenizer_input[0] + "</s></s>" + transformed_text.tokenizer_input[1]
+        labelled_prem_hyp = label + transformed_text.tokenizer_input[0] #+ "</s></s>" + transformed_text.tokenizer_input[1]
         modified_indices = list(transformed_text.attack_attrs['modified_indices'])
         modified_word = ""
         replaced_word = ""
