@@ -20,5 +20,5 @@ class GERMetric(Metric):
             elif isinstance(result, SkippedAttackResult):
                 continue
             else:
-                num_err += len(self.lang_tool.check(result.perturbed_result.attacked_text))
+                num_err += len(self.lang_tool.check(result.perturbed_result.attacked_text)) - len(self.lang_tool.check(result.original_result.attacked_text))
         return {"avg_grammar_errs" : round(np.mean(num_err), 2)}
