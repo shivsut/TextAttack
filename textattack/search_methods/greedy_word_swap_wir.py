@@ -181,28 +181,14 @@ class GreedyWordSwapWIR(SearchMethod):
                 continue
             scores = self.calc_similarity(candidate_res, initial_result.attacked_text)
             best_result = cur_result
+            max_similarity = -float("inf")
             for i in range(len(candidate_res)):
                 cur_result = candidate_res[i]
                 # If we succeeded, return the index with best similarity.
-                best_result = cur_result
                 # @TODO: Use vectorwise operations
-                max_similarity = -float("inf")
-                for result in results:
-                    if result.goal_status != GoalFunctionResultStatus.SUCCEEDED:
-                        break
-                    candidate = result.attacked_text
-                    try:
-                        #similarity_score = candidate.attack_attrs["similarity_score"]
-                        similarity_score = scores[i]
-                    except KeyError:
-                        # If the attack was run without any similarity metrics,
-                        # candidates won't have a similarity score. In this
-                        # case, break and return the candidate that changed
-                        # the original score the most.
-                        break
-                    if similarity_score > max_similarity:
-                        max_similarity = similarity_score
-                        best_result = result
+                if scores[i] > max_similarity:
+                    max_similarity = scores[i]
+                    best_result = cur_result
             return best_result
         return cur_result
 

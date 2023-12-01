@@ -165,9 +165,11 @@ class Attacker:
             if self.dataset.label_names is not None:
                 example.attack_attrs["label_names"] = self.dataset.label_names
                 example.attack_attrs["ground_truth"] = ground_truth_output
+            import traceback
             try:
                 result = self.attack.attack(example, ground_truth_output)
             except Exception as e:
+                print (traceback.format_exc())
                 raise e
             if (
                 isinstance(result, SkippedAttackResult) and self.attack_args.attack_n

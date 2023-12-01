@@ -12,6 +12,16 @@ class sentiment_nli(Constraint):
             torch.set_default_device('cuda')
             self.device = "cuda"
         self.pipeline = pipeline("sentiment-analysis",device=self.device)
+    def _check_constraint_many(self, transformed_texts, reference_text):
+        t_inp = [x.tokenizer_input[0] for x in transformed_texts]
+        t_out = self.pipeline(t_inp)
+        s_out = self.pipeline(reference_text.tokenizer_input[0])
+        res = []
+        for i in range(len(t_out)):
+            if t_out[i]['label'] == s_out[0]['label']:
+                res.append(transformed_texts[i])
+        #return [True if x['label'] == s_out[0]['label'] else False for x in t_out]
+        return res
 
     def _check_constraint(self, transformed_text, reference_text):
         ref_sent = self.pipeline(reference_text.tokenizer_input[0])

@@ -1,5 +1,6 @@
 import copy
 import json
+from datetime import datetime
 
 import numpy as np
 import torch
@@ -31,6 +32,8 @@ class lm_liklihood_constraint(Constraint):
         self.debug_list = ['', '', -1]
         self.tmp_dict_below = {}
         self.tmp_dict_above = {}
+        FORMAT = '%Y%m%d%H%M%S'
+        self.file_name = 'lm_liklihood_debug_%s.json' % (datetime.now().strftime(FORMAT))
     def get_masked_sents(self, label, transformed_text, reference_text):
         #reference_text.attack_attrs['ground_truth']
         labelled_prem_hyp = label + transformed_text.tokenizer_input[0] + "</s></s>" + transformed_text.tokenizer_input[1]
@@ -71,7 +74,7 @@ class lm_liklihood_constraint(Constraint):
     def check_if_new_dump(self, transformed_text, reference_text):
         if self.debug_list[0] != reference_text.tokenizer_input[0] or self.debug_list[1] != reference_text.tokenizer_input[1] or self.debug_list[2] != reference_text.attack_attrs['ground_truth']:
             if len(self.debug_dict) > 0:
-                with open('lm_liklihood_debug.json', 'a') as f:
+                with open(self.file_name, 'a') as f:
                     self.debug_dict['can'] = {k: self.tmp_dict_above[k] for k in (sorted(self.tmp_dict_above, reverse=False)[:5])}
                     self.debug_dict['can'].update({k:self.tmp_dict_below[k] for k in (sorted(self.tmp_dict_below, reverse=True)[:5])})
                     json.dump(self.debug_dict, f, indent=1)

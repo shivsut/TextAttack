@@ -143,7 +143,7 @@ class AttackLogManager:
         if self.enable_advance_metrics:
             perplexity_stats = Perplexity().calculate(self.results)
             use_stats = USEMetric().calculate(self.results)
-            ger_stats = GERMetric().calulate(self.results)
+            ger_stats = GERMetric().calculate(self.results)
             summary_table_rows.append(
                 [
                     "Average Original Perplexity:",
@@ -161,7 +161,7 @@ class AttackLogManager:
                 ["Average Attack USE Score:", use_stats["avg_attack_use_score"]]
             )
             summary_table_rows.append(
-                ["Average Grammatical errors:", use_stats["avg_grammar_errs"]]
+                ["Average Grammatical errors:", ger_stats["avg_grammar_errs"]]
             )
 
         self.log_summary_rows(
