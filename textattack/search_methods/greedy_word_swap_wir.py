@@ -15,6 +15,7 @@ import numpy as np
 import torch
 from torch.nn.functional import softmax
 
+from textattack.constraints.semantics.sentence_encoders import UniversalSentenceEncoder
 from textattack.goal_function_results import GoalFunctionResultStatus
 from textattack.search_methods import SearchMethod
 from textattack.shared.validators import (
@@ -34,6 +35,13 @@ class GreedyWordSwapWIR(SearchMethod):
     def __init__(self, wir_method="unk", unk_token="[UNK]"):
         self.wir_method = wir_method
         self.unk_token = unk_token
+        self.use_constraint = UniversalSentenceEncoder(
+            threshold=0.840845057,
+            metric="angular",
+            compare_against_original=False,
+            window_size=15,
+            skip_text_shorter_than_window=True,
+        )
 
     def _get_index_order(self, initial_text, max_len=-1):
         """Returns word indices of ``initial_text`` in descending order of
@@ -153,10 +161,12 @@ class GreedyWordSwapWIR(SearchMethod):
             for res in results:
                 if res.score > cur_result.score and res.goal_status == GoalFunctionResultStatus.SUCCEEDED:
                     candidate_res.append(res)
-            if results[0].score > cur_result.score:
-                cur_result = results[0]
-            else:
+            # if results[0].score > cur_result.score:
+            #     cur_result = results[0]
+            if not candidate_res:
                 continue
+            self.use_constraint._check_constraint_many(candidate_res, initial_result.attacked_text)
+
             # If we succeeded, return the index with best similarity.
             if cur_result.goal_status == GoalFunctionResultStatus.SUCCEEDED:
                 best_result = cur_result

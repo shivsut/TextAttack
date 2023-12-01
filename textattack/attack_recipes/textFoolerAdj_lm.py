@@ -6,6 +6,7 @@ from textattack.constraints.semantics import WordEmbeddingDistance
 from textattack.constraints.pre_transformation import RepeatModification, StopwordModification, InputColumnModification
 from textattack.constraints.semantics.sentence_encoders import UniversalSentenceEncoder, BERT
 from textattack.constraints.grammaticality import PartOfSpeech, LanguageTool
+from textattack.constraints.semantics.sentiment_nli import sentiment_nli
 from textattack.goal_functions import UntargetedClassification
 from textattack.search_methods import GreedyWordSwapWIR
 from textattack.transformations import WordSwapEmbedding, WordSwapMaskedLM, WordSwapWordNet
@@ -39,8 +40,12 @@ class TextFoolerJin2019Adjusted_LM(AttackRecipe):
         # shared_tokenizer = transformers.AutoTokenizer.from_pretrained(
         #     "distilroberta-base"
         # )
+        import os
+        path = 'C:\\git\\nlp-fall-2023\\assignments\\fp\\fp-dataset-artifacts-main\\content\\fp-dataset-artifacts\\roberta-base-snli\\'
+        if not os.path.isdir(path):
+            path = '/gdrive/MyDrive/fp/llmtrain/roberta-base-snli/'
         # transformation = WordSwapMaskedLM(
-        #     method="bert-attack", max_candidates=50, min_confidence=5e-4
+        #     method="bert-attack", max_candidates=50, min_confidence=5e-4#, masked_language_model=path
         # )
         #transformation = WordSwapWordNet()
         #
@@ -107,27 +112,24 @@ class TextFoolerJin2019Adjusted_LM(AttackRecipe):
         # embeddings by pi. So if the original threshold was that 1 - sim >= 0.5, the
         # new threshold is 1 - (0.5) / pi = 0.840845057
         #
-        # use_constraint = UniversalSentenceEncoder(
-        #     threshold=0.840845057,
-        #     metric="angular",
-        #     compare_against_original=False,
-        #     window_size=15,
-        #     skip_text_shorter_than_window=True,
-        # )
-        # constraints.append(use_constraint)
+        use_constraint = UniversalSentenceEncoder(
+            threshold=0.840845057,
+            metric="angular",
+            compare_against_original=False,
+            window_size=15,
+            skip_text_shorter_than_window=True,
+        )
+        constraints.append(use_constraint)
         #
         # Goal is untargeted classification
         #
         # constraints.append(
         #     WordEmbeddingDistance(min_cos_sim=0.7)
         # )
-        # import os
-        # path = 'C:\\git\\nlp-fall-2023\\assignments\\fp\\fp-dataset-artifacts-main\\content\\fp-dataset-artifacts\\roberta-base-snli\\'
-        # if not os.path.isdir(path):
-        #     path = '/gdrive/MyDrive/fp/llmtrain/roberta-base-snli/'
-        # constraints.append(
-        #     lm_liklihood_constraint(model_path=path)
-        # )
+        constraints.append(sentiment_nli())
+        constraints.append(
+            lm_liklihood_constraint(model_path=path)
+        )
         # constraints.append(
         #     LanguageTool(1)
         # )
