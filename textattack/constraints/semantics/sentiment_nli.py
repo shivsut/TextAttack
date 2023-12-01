@@ -6,7 +6,7 @@ from textattack.shared.validators import transformation_consists_of_word_swaps
 class sentiment_nli(Constraint):
     def __init__(self, compare_against_original=True):
         super().__init__(compare_against_original)
-        self.pipeline = pipeline("sentiment-analysis")
+        self.pipeline = pipeline("sentiment-analysis", device_map="auto")
 
     def _check_constraint(self, transformed_text, reference_text):
         ref_sent = self.pipeline(reference_text.tokenizer_input[0])
