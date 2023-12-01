@@ -71,10 +71,11 @@ class lm_liklihood_constraint(Constraint):
     def check_if_new_dump(self, transformed_text, reference_text):
         if self.debug_list[0] != reference_text.tokenizer_input[0] or self.debug_list[1] != reference_text.tokenizer_input[1] or self.debug_list[2] != reference_text.attack_attrs['ground_truth']:
             if len(self.debug_dict) > 0:
-                with open('lm_liklihood_debug.json', 'w') as f:
+                with open('lm_liklihood_debug.json', 'a') as f:
                     self.debug_dict['can'] = {k: self.tmp_dict_above[k] for k in (sorted(self.tmp_dict_above, reverse=False)[:5])}
                     self.debug_dict['can'].update({k:self.tmp_dict_below[k] for k in (sorted(self.tmp_dict_below, reverse=True)[:5])})
-                    json.dump(self.debug_dict, f)
+                    json.dump(self.debug_dict, f, indent=1)
+                    f.write('\n')
             self.debug_dict.clear()
             self.tmp_dict_above.clear()
             self.tmp_dict_below.clear()
