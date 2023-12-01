@@ -1,10 +1,12 @@
+import language_tool_python
+
 from textattack import Metric
 from textattack.attack_results import FailedAttackResult, SkippedAttackResult
 
 
 class GERMetric(Metric):
     def __init__(self, **kwargs):
-        self.lang_tool = language_tool_python.LanguageTool(language)
+        self.lang_tool = language_tool_python.LanguageTool('eng')
 
 
 
