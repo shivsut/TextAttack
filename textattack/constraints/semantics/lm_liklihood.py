@@ -1,4 +1,5 @@
 import copy
+import json
 
 import numpy as np
 import torch
@@ -26,9 +27,13 @@ class lm_liklihood_constraint(Constraint):
             self.model = self.model.to("cuda")
             self.device = "cuda"
         self.model.eval()
+        self.debug_dict = {}
+        self.debug_list = ['', '', -1]
+        self.tmp_dict_below = {}
+        self.tmp_dict_above = {}
     def get_masked_sents(self, label, transformed_text, reference_text):
         #reference_text.attack_attrs['ground_truth']
-        labelled_prem_hyp = label + transformed_text.tokenizer_input[0] #+ "</s></s>" + transformed_text.tokenizer_input[1]
+        labelled_prem_hyp = label + transformed_text.tokenizer_input[0] + "</s></s>" + transformed_text.tokenizer_input[1]
         modified_indices = list(transformed_text.attack_attrs['modified_indices'])
         modified_word = ""
         replaced_word = ""
@@ -63,12 +68,29 @@ class lm_liklihood_constraint(Constraint):
                     sent[i] = new_token
         return masked_sents
 
+    def check_if_new_dump(self, transformed_text, reference_text):
+        if self.debug_list[0] != reference_text.tokenizer_input[0] or self.debug_list[1] != reference_text.tokenizer_input[1] or self.debug_list[2] != reference_text.attack_attrs['ground_truth']:
+            if len(self.debug_dict) > 0:
+                with open('lm_liklihood_debug.json', 'w') as f:
+                    self.debug_dict['can'] = {k: self.tmp_dict_above[k] for k in (sorted(self.tmp_dict_above, reverse=False)[:5])}
+                    self.debug_dict['can'].update({k:self.tmp_dict_below[k] for k in (sorted(self.tmp_dict_below, reverse=True)[:5])})
+                    json.dump(self.debug_dict, f)
+            self.debug_dict.clear()
+            self.tmp_dict_above.clear()
+            self.tmp_dict_below.clear()
+            self.debug_list[0] = reference_text.tokenizer_input[0]
+            self.debug_list[1] = reference_text.tokenizer_input[1]
+            self.debug_list[2] = reference_text.attack_attrs['ground_truth']
+            self.debug_dict['inp'] = self.debug_list
+
     def _check_constraint(self, transformed_text, reference_text):
         ent_masked_sents, replaced_idx, replaced_token = self.get_masked_sents("<ent>",transformed_text, reference_text)
         if not ent_masked_sents:
             return False
         neu_masked_sents = self.replace_label(self.label_token["<neu>"], self.label_token["<ent>"], masked_sents=copy.deepcopy(ent_masked_sents))
         con_masked_sents = self.replace_label(self.label_token["<con>"], self.label_token["<ent>"], masked_sents=copy.deepcopy(ent_masked_sents))
+
+        self.check_if_new_dump(transformed_text, reference_text)
 
         input_ids = torch.tensor( [sent for sent in ent_masked_sents + neu_masked_sents + con_masked_sents], dtype=torch.long).to(self.device)
         mask_ids = torch.tensor([[1] * len(sent) for sent in ent_masked_sents + neu_masked_sents + con_masked_sents]).to(self.device)
@@ -99,9 +121,13 @@ class lm_liklihood_constraint(Constraint):
         for label, idx in lable_idx_map.items():
             other_probs.append(probs[idx].prod(0))
         other_prob = max(other_probs)
-        if (gold_probs/other_prob) > 1:
+        ratio = gold_probs/other_prob
+        if ratio >= 1:
+            self.tmp_dict_above[ratio.item()] = transformed_text.tokenizer_input[0]
             return True
-        return False
+        else:
+            self.tmp_dict_below[ratio.item()] = transformed_text.tokenizer_input[0]
+            return False
 
     def check_compatibility(self, transformation):
         return transformation_consists_of_word_swaps(transformation)
