@@ -53,6 +53,8 @@ class TextFoolerAdjusted(AttackRecipe):
         #
         # Universal Sentence Encoder with a minimum angular similarity of ε = 0.7.
         #
+        SE_thresh=0.98
+        sentence_encoder='bert'
         if sentence_encoder == 'bert':
             se_constraint = BERT(threshold=SE_thresh,
                                  metric='cosine', compare_against_original=False, window_size=15,
