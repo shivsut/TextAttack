@@ -103,7 +103,8 @@ class lm_liklihood_constraint(Constraint):
         del sent_info
         del sent_info_list
         gc.collect()
-
+        if len(input_ids)  == 0:
+            return []
         dataset = TensorDataset(input_ids, mask_ids)
         sampler = SequentialSampler(dataset)
         data_loader = DataLoader(dataset, sampler=sampler, batch_size=len(input_ids))
