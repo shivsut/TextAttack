@@ -131,7 +131,7 @@ class TextFoolerJin2019Adjusted_LM(AttackRecipe):
             lm_liklihood_constraint(model_path=path)
         )
         constraints.append(
-            LanguageTool(1)
+            LanguageTool(2)
         )
         goal_function = UntargetedClassification(model_wrapper)
         #
