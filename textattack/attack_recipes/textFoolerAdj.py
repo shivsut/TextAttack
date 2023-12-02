@@ -1,11 +1,16 @@
+import transformers
+
 from textattack.attack import Attack
+from textattack.attack_recipes import AttackRecipe
 from textattack.constraints.semantics import WordEmbeddingDistance
-from textattack.constraints.pre_transformation import RepeatModification, StopwordModification
+from textattack.constraints.pre_transformation import RepeatModification, StopwordModification, InputColumnModification
 from textattack.constraints.semantics.sentence_encoders import UniversalSentenceEncoder, BERT
 from textattack.constraints.grammaticality import PartOfSpeech, LanguageTool
+from textattack.constraints.semantics.sentiment_nli import sentiment_nli
 from textattack.goal_functions import UntargetedClassification
 from textattack.search_methods import GreedyWordSwapWIR
-from textattack.transformations import WordSwapEmbedding
+from textattack.transformations import WordSwapEmbedding, WordSwapMaskedLM, WordSwapWordNet
+from textattack.constraints.semantics.lm_liklihood import lm_liklihood_constraint
 
 
 #def TextFoolerJin2019Adjusted(model, SE_thresh=0.98, sentence_encoder='bert'):
