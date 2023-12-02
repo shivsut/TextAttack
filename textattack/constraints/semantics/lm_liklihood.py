@@ -47,15 +47,15 @@ class lm_liklihood_constraint(Constraint):
         modified_indices = list(transformed_text.attack_attrs['modified_indices'])
         modified_word = ""
         replaced_word = ""
-        modified_indices  = modified_indices[0]
-        if modified_indices < len(transformed_text.words_per_input[0]):
-            modified_word = reference_text.words_per_input[0][modified_indices]
-            replaced_word = transformed_text.words_per_input[0][modified_indices]
+        modified_idx = modified_indices[0]
+        if modified_idx < len(transformed_text.words_per_input[0]):
+            modified_word = reference_text.words_per_input[0][modified_idx]
+            replaced_word = transformed_text.words_per_input[0][modified_idx]
         else:
-            modified_word = reference_text.words_per_input[1][modified_indices-len(transformed_text.words_per_input[0])]
-            replaced_word = transformed_text.words_per_input[1][modified_indices-len(transformed_text.words_per_input[0])]
+            modified_word = reference_text.words_per_input[1][modified_idx-len(transformed_text.words_per_input[0])]
+            replaced_word = transformed_text.words_per_input[1][modified_idx-len(transformed_text.words_per_input[0])]
 
-        replaced_word_token = self.tokenizer.convert_tokens_to_ids(self.tokenizer.tokenize(' ' +replaced_word))
+        replaced_word_token = self.tokenizer.convert_tokens_to_ids(self.tokenizer.tokenize((' ' if modified_idx > 0 else '') + replaced_word))
         #replaced_word_token = self.tokenizer.encode(replaced_word)
         labelled_prem_hyp_tokens = self.tokenizer.encode(labelled_prem_hyp)
         all_nasked_sents = []
@@ -116,13 +116,17 @@ class lm_liklihood_constraint(Constraint):
                 model_out = self.model(input_ids=input_ids, attention_mask=input_mask)
                 logits = model_out[0].detach()
 
-            pos_idx = torch.tensor(data = [],  dtype=torch.int32)
-            tokens_tensor = torch.tensor(data = [],  dtype=torch.int32)
+            pos_idx = torch.tensor(data = [],  dtype=torch.int64)
+            tokens_tensor = torch.tensor(data = [],  dtype=torch.int64)
             for i in range(len(all_replaced_idx_list)):
                 pos_idx = torch.cat((pos_idx, torch.tensor(all_replaced_idx_list[i]).unsqueeze(-1).unsqueeze(-1).repeat(3, 1, logits.size(-1))), 0)
                 tokens_tensor = torch.cat((tokens_tensor, torch.tensor(all_replaced_word_token_list[i]).unsqueeze(1).repeat(3, 1)), 0)
             #pos_idx = torch.tensor(replaced_idx).unsqueeze(-1).unsqueeze(-1).repeat(3, 1, logits.size(-1))
-            probs_idx = torch.gather(logits, 1, pos_idx).softmax(dim=-1).squeeze(1)
+            try:
+                probs_idx = torch.gather(logits, 1, pos_idx).softmax(dim=-1).squeeze(1)
+            except Exception as e:
+                print(e)
+                raise e
             # tokens_tensor = torch.tensor(replaced_token).unsqueeze(1).repeat(3,1)
             probs = torch.gather(probs_idx, 1, tokens_tensor).squeeze(-1)
 
