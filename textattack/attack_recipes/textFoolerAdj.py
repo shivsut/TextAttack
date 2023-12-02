@@ -74,7 +74,7 @@ class TextFoolerAdjusted(AttackRecipe):
         #
         # Untargeted attack
         #
-        goal_function = UntargetedClassification(model)
+        goal_function = UntargetedClassification(model_wrapper)
 
         #
         # Greedily swap words with "Word Importance Ranking".
