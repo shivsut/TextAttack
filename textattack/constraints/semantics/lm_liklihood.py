@@ -203,6 +203,9 @@ class lm_liklihood_constraint(Constraint):
         d = {'inp': l}
         d['can'] = {k: debug_dict_above[k] for k in (sorted(debug_dict_above, reverse=False)[:5])}
         d['can'].update({k: debug_dict_below[k] for k in (sorted(debug_dict_below, reverse=True)[:5])})
-        with open(self.file_name, 'a') as f:
-            json.dump(d, f, indent=1)
-            f.write('\n')
+        try:
+            with open(self.file_name, 'a') as f:
+                json.dump(d, f, indent=1)
+                f.write('\n')
+        except:
+            pass
