@@ -33,7 +33,7 @@ class TextFoolerJin2019Adjusted_LM(AttackRecipe):
         # Swap words with their 50 closest embedding nearest-neighbors.
         # Embedding: Counter-fitted PARAGRAM-SL999 vectors.
         #
-        transformation = WordSwapEmbedding(max_candidates=60)
+        transformation = WordSwapEmbedding(max_candidates=30)
         # shared_masked_lm = transformers.AutoModelForCausalLM.from_pretrained(
         #     "distilroberta-base"
         # )

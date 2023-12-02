@@ -5,6 +5,7 @@ from datetime import datetime
 import numpy as np
 import torch
 from transformers import RobertaTokenizer, RobertaForMaskedLM
+from torch.utils.data import DataLoader, SequentialSampler, TensorDataset
 
 from textattack.constraints import Constraint
 from textattack.shared.validators import transformation_consists_of_word_swaps
@@ -34,6 +35,15 @@ class lm_liklihood_constraint(Constraint):
         self.tmp_dict_above = {}
         FORMAT = '%Y%m%d%H%M%S'
         self.file_name = 'lm_liklihood_debug_%s.json' % (datetime.now().strftime(FORMAT))
+
+    def get_masked_sents_all(self, label, transformed_texts, reference_text):
+        res = []
+        max_sent_token_len = 0
+        for t_text in transformed_texts:
+            all_masked_sents, replaced_idx, replaced_word_token, sent_len = self.get_masked_sents(label, t_text, reference_text)
+            res.append([all_masked_sents, replaced_idx, replaced_word_token])
+            max_sent_token_len = max(max_sent_token_len, sent_len)
+        return res, max_sent_token_len
     def get_masked_sents(self, label, transformed_text, reference_text):
         #reference_text.attack_attrs['ground_truth']
         labelled_prem_hyp = label + transformed_text.tokenizer_input[0] + "</s></s>" + transformed_text.tokenizer_input[1]
@@ -62,7 +72,7 @@ class lm_liklihood_constraint(Constraint):
                     replaced_idx.append(j)
                 #labelled_prem_hyp_tokens[i:i + len(replaced_word_token)] = mask_tokens
                 break
-        return all_nasked_sents, replaced_idx, replaced_word_token
+        return all_nasked_sents, replaced_idx, replaced_word_token, len(labelled_prem_hyp_tokens)
 
     def replace_label(self, new_token, old_token, masked_sents):
         for sent in masked_sents:
@@ -87,24 +97,53 @@ class lm_liklihood_constraint(Constraint):
             self.debug_list[2] = reference_text.attack_attrs['ground_truth']
             self.debug_dict['inp'] = self.debug_list
 
-    def _check_constraint(self, transformed_text, reference_text):
-        ent_masked_sents, replaced_idx, replaced_token = self.get_masked_sents("<ent>",transformed_text, reference_text)
-        if not ent_masked_sents:
-            return False
-        neu_masked_sents = self.replace_label(self.label_token["<neu>"], self.label_token["<ent>"], masked_sents=copy.deepcopy(ent_masked_sents))
-        con_masked_sents = self.replace_label(self.label_token["<con>"], self.label_token["<ent>"], masked_sents=copy.deepcopy(ent_masked_sents))
+    def _check_constraint_many(self, transformed_texts, reference_text):
+        #ent_masked_sents, replaced_idx, replaced_token = self.get_masked_sents("<ent>",transformed_text, reference_text)
+        sent_info_list, max_sent_token_len = self.get_masked_sents_all("<ent>", transformed_texts, reference_text)
+        all_ent_masked_sent_list = []
+        all_replaced_idx_list = []
+        all_replaced_word_token_list = []
+        for sent_info in sent_info_list:
+            all_ent_masked_sent_list.append(sent_info[0])
+            all_replaced_idx_list.append(sent_info[1])
+            all_replaced_word_token_list.append(sent_info[2])
 
-        self.check_if_new_dump(transformed_text, reference_text)
+        all_sent_tokens = []
+        each_t_text_list_len = []
+        for ent_sent_token in all_ent_masked_sent_list:
+            all_sent_tokens.extend(ent_sent_token)
+            all_sent_tokens.extend(self.replace_label(self.label_token["<neu>"], self.label_token["<ent>"], masked_sents=copy.deepcopy(ent_sent_token)))
+            all_sent_tokens.extend(self.replace_label(self.label_token["<con>"], self.label_token["<ent>"], masked_sents=copy.deepcopy(ent_sent_token)))
+            each_t_text_list_len.append(len(ent_sent_token)*3)
+        # ent_masked_sents = sent_info_list[0]
+        #
+        # if not ent_masked_sents:
+        #     return False
+        # neu_masked_sents = self.replace_label(self.label_token["<neu>"], self.label_token["<ent>"], masked_sents=copy.deepcopy(ent_masked_sents))
+        # con_masked_sents = self.replace_label(self.label_token["<con>"], self.label_token["<ent>"], masked_sents=copy.deepcopy(ent_masked_sents))
 
-        input_ids = torch.tensor( [sent for sent in ent_masked_sents + neu_masked_sents + con_masked_sents], dtype=torch.long).to(self.device)
-        mask_ids = torch.tensor([[1] * len(sent) for sent in ent_masked_sents + neu_masked_sents + con_masked_sents]).to(self.device)
+        #self.check_if_new_dump(transformed_text, reference_text)
+
+        input_ids = torch.tensor( [sent + [self.tokenizer.pad_token_id] * (max_sent_token_len - len(sent)) for sent in all_sent_tokens], dtype=torch.long).to(self.device)
+        mask_ids = torch.tensor([[1] * len(sent) + [0] * (max_sent_token_len - len(sent)) for sent in all_sent_tokens]).to(self.device)
+
+        dataset = TensorDataset(input_ids, mask_ids)
+        sampler = SequentialSampler(dataset)
+        data_loader = DataLoader(dataset, sampler=sampler, batch_size=len(input_ids))
+
+        all_probs = []
+        each_t_text_list_idx = 0
         with torch.no_grad():
             self.model.eval()
-            model_out = self.model(input_ids=input_ids, attention_mask=mask_ids)
+            for input_ids, input_mask in data_loader:
+                model_out = self.model(input_ids=input_ids, attention_mask=input_mask)
 
-            logits = model_out[0].detach()
+                logits = model_out[0].detach()
 
-            pos_idx = torch.tensor(replaced_idx).unsqueeze(-1).unsqueeze(-1).repeat(3, 1, logits.size(-1))
+            pos_idx = torch.tensor(data = [])
+            for idx in all_replaced_idx_list:
+                pos_idx = torch.cat((pos_idx, torch.tensor(idx, dtype=torch.int32).unsqueeze(-1).unsqueeze(-1).repeat(3, 1, logits.size(-1)).to(dtype=torch.int32)))
+            #pos_idx = torch.tensor(replaced_idx).unsqueeze(-1).unsqueeze(-1).repeat(3, 1, logits.size(-1))
             probs_idx = torch.gather(logits, 1, pos_idx).softmax(dim=-1).squeeze(1)
             tokens_tensor = torch.tensor(replaced_token).unsqueeze(1).repeat(3,1)
             probs = torch.gather(probs_idx, 1, tokens_tensor).squeeze(-1)
@@ -136,4 +175,6 @@ class lm_liklihood_constraint(Constraint):
     def check_compatibility(self, transformation):
         return transformation_consists_of_word_swaps(transformation)
 
+    def _check_constraint(self, transformed_text, reference_text):
+        pass
 
