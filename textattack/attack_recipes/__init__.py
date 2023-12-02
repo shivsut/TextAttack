@@ -43,3 +43,4 @@ from .french_recipe import FrenchRecipe
 from .spanish_recipe import SpanishRecipe
 from .chinese_recipe import ChineseRecipe
 from .textFoolerAdj_lm import TextFoolerJin2019Adjusted_LM
+from .textFoolerAdj import TextFoolerAdjusted
