@@ -163,7 +163,7 @@ class lm_liklihood_constraint(Constraint):
                 debug_dict_above[ratio.item()] = transformed_texts[i].tokenizer_input[0]
                 res.append(transformed_texts[i])
             else:
-                debug_dict_above[ratio.item()] = transformed_texts[i].tokenizer_input[0]
+                debug_dict_below[ratio.item()] = transformed_texts[i].tokenizer_input[0]
         self.logdebug(debug_dict_above, debug_dict_below, reference_text)
         return res
         #
